@@ -1,0 +1,582 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-canvas: #FCFAF7;
+    --bg-main: #FCFAF7;
+    --surface: #FFFFFF;
+    --sidebar: #F7F4EE;
+    --text-primary: #1C1917;
+    --text-secondary: #78716C;
+    --border-color: #E8E2D7;
+    --accent: #9E4A25;
+    --accent-hover: #883E1D;
+
+    /* Emil Kowalski motion curves */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  html,
+  body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  #root {
+    height: 100%;
+    height: 100dvh;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* Touch & Mobile Accessibility Foundations */
+  button,
+  a,
+  [role="button"],
+  .tappable {
+    touch-action: manipulation;
+  }
+
+  button,
+  [role="button"],
+  .tab,
+  .chip {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Prevent iOS automatic page zoom on focus by ensuring 16px minimum on touch */
+  @media (pointer: coarse) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Custom warm minimalist scrollbars */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #DDD6CB;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #C4BCB0;
+  }
+
+  @keyframes shimmer-move {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(200%);
+    }
+  }
+
+  .animate-shimmer-fast {
+    animation: shimmer-move 1.6s infinite linear;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   Chat Answer Markdown Formatting (.answer)
+   Overrides CSS reset (Preflight) for lists, headings, and paragraphs
+   ========================================================================== */
+.answer {
+  color: var(--text-primary, #1C1917);
+  font-size: 0.875rem;
+  line-height: 1.625;
+  word-break: break-word;
+}
+
+.answer p {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.answer p:first-child {
+  margin-top: 0;
+}
+
+.answer p:last-child {
+  margin-bottom: 0;
+}
+
+/* Unordered Lists: restore disc bullets and spacing */
+.answer ul {
+  list-style-type: disc !important;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem !important;
+}
+
+/* Ordered Lists: restore decimal numbering and spacing */
+.answer ol {
+  list-style-type: decimal !important;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem !important;
+}
+
+/* List items */
+.answer li {
+  display: list-item !important;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  padding-left: 0.25rem;
+}
+
+/* Nested Lists indentation */
+.answer ul ul,
+.answer ol ul {
+  list-style-type: circle !important;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  padding-left: 1.25rem !important;
+}
+
+.answer ul ol,
+.answer ol ol {
+  list-style-type: lower-roman !important;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  padding-left: 1.25rem !important;
+}
+
+/* Headings h1-h3 */
+.answer h1,
+.answer h2,
+.answer h3 {
+  font-weight: 600;
+  color: var(--text-primary, #1C1917);
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.answer h1:first-child,
+.answer h2:first-child,
+.answer h3:first-child {
+  margin-top: 0;
+}
+
+.answer h1 {
+  font-size: 1.25rem;
+}
+
+.answer h2 {
+  font-size: 1.125rem;
+}
+
+.answer h3 {
+  font-size: 1rem;
+}
+
+/* Strong / Bold */
+.answer strong,
+.answer b {
+  font-weight: 600;
+  color: inherit;
+}
+
+/* Inline code and code blocks */
+.answer code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  padding: 0.15em 0.35em;
+  border-radius: 0.25rem;
+  background-color: #EFE9DF;
+}
+
+.answer pre {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #1C1917;
+  color: #F7F4EE;
+  overflow-x: auto;
+}
+
+.answer pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.answer blockquote {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1rem;
+  border-left: 3px solid var(--accent, #9E4A25);
+  color: var(--text-secondary, #78716C);
+}
+
+.answer hr {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  border: 0;
+  border-top: 1px solid var(--border-color, #E8E2D7);
+}
+
+/* Tables: clean modern bordered table with subtle styling */
+.answer table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 0.875rem;
+  margin-bottom: 0.875rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border-color, #E8E2D7);
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.answer th {
+  background-color: #F7F4EE;
+  color: var(--text-primary, #1C1917);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border-color, #E8E2D7);
+  border-right: 1px solid var(--border-color, #E8E2D7);
+}
+
+.answer th:last-child {
+  border-right: none;
+}
+
+.answer td {
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--border-color, #E8E2D7);
+  border-right: 1px solid var(--border-color, #E8E2D7);
+  color: var(--text-primary, #1C1917);
+  vertical-align: top;
+}
+
+.answer td:last-child {
+  border-right: none;
+}
+
+.answer tr:last-child td {
+  border-bottom: none;
+}
+
+.answer tr:nth-child(even) td {
+  background-color: #FAF8F5;
+}
+
+.answer tr:hover td {
+  background-color: #F4EFEA;
+}
+
+/* Citation inline superscript rules */
+.citation-sup {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  vertical-align: baseline;
+  top: -0.45em;
+  margin-left: 0.125rem;
+  margin-right: 0;
+  user-select: none;
+}
+
+.citation-sup + .citation-sup {
+  margin-left: 0.2rem !important;
+}
+
+.citation-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.12rem 0.35rem;
+  border-radius: 0.3rem;
+  background-color: #F5EBE1;
+  color: #9E4A25;
+  border: 1px solid #EADBCE;
+  transition: all 0.16s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  cursor: pointer;
+  vertical-align: middle;
+  text-decoration: none;
+}
+
+.citation-btn:hover {
+  background-color: #9E4A25;
+  color: #FFFFFF;
+  border-color: #9E4A25;
+  transform: scale(1.06);
+}
+
+.citation-btn:active {
+  transform: scale(0.94);
+}
+
+.citation-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #FCFAF7, 0 0 0 4px #9E4A25;
+}
+
+/* ==========================================================================
+   Premium Icon Micro-Interactions & Hover Animations
+   Emil Kowalski Design Engineering: Snappy, GPU-accelerated (transform/opacity)
+   ========================================================================== */
+
+/* Base icon interactive button feedback */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms var(--ease-out), color 160ms ease, background-color 160ms ease;
+  user-select: none;
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+/* Subtle icon hover scale */
+.icon-hover-scale {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms var(--ease-out);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-scale,
+button:hover .icon-hover-scale,
+a:hover .icon-hover-scale,
+.icon-hover-scale:hover {
+  transform: scale(1.12);
+}
+
+.group:active .icon-hover-scale,
+button:active .icon-hover-scale,
+a:active .icon-hover-scale,
+.icon-hover-scale:active {
+  transform: scale(0.93);
+}
+
+/* Playful icon tilt (Pencil / Pins / Badges) */
+.icon-hover-tilt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms var(--ease-spring);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-tilt,
+button:hover .icon-hover-tilt,
+.icon-hover-tilt:hover {
+  transform: scale(1.12) rotate(-10deg);
+}
+
+/* Subtle gear / settings rotate */
+.icon-hover-rotate-gear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 260ms var(--ease-out);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-rotate-gear,
+button:hover .icon-hover-rotate-gear,
+.icon-hover-rotate-gear:hover {
+  transform: scale(1.08) rotate(45deg);
+}
+
+/* Micro 90-degree rotation (Plus / Expand buttons) */
+.icon-hover-spin-90 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 220ms var(--ease-out);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-spin-90,
+button:hover .icon-hover-spin-90,
+.icon-hover-spin-90:hover {
+  transform: scale(1.08) rotate(90deg);
+}
+
+/* Reload / Regenerate icon counter-rotation */
+.icon-hover-spin-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 220ms var(--ease-out);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-spin-back,
+button:hover .icon-hover-spin-back,
+.icon-hover-spin-back:hover {
+  transform: scale(1.1) rotate(-55deg);
+}
+
+/* Upward arrow nudge (Send button / up actions) */
+.icon-hover-nudge-up {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms var(--ease-out);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-nudge-up,
+button:hover .icon-hover-nudge-up,
+.icon-hover-nudge-up:hover {
+  transform: translateY(-2px) scale(1.08);
+}
+
+/* Diagonal external arrow nudge (Suggestions, links) */
+.icon-hover-arrow-diag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms var(--ease-out), color 180ms ease;
+  will-change: transform;
+}
+
+.group:hover .icon-hover-arrow-diag,
+button:hover .icon-hover-arrow-diag,
+.icon-hover-arrow-diag:hover {
+  transform: translate(2px, -2px) scale(1.1);
+}
+
+/* Horizontal nudge (Left/Right chevrons & expanders) */
+.icon-hover-nudge-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms var(--ease-out);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-nudge-right,
+button:hover .icon-hover-nudge-right,
+.icon-hover-nudge-right:hover {
+  transform: translateX(2.5px) scale(1.05);
+}
+
+.icon-hover-nudge-left {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms var(--ease-out);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-nudge-left,
+button:hover .icon-hover-nudge-left,
+.icon-hover-nudge-left:hover {
+  transform: translateX(-2.5px) scale(1.05);
+}
+
+/* Sparkle / Magic icon bounce & scale */
+.icon-hover-sparkle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 220ms var(--ease-spring);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-sparkle,
+button:hover .icon-hover-sparkle,
+.icon-hover-sparkle:hover {
+  transform: scale(1.18) rotate(12deg);
+}
+
+/* Thumbs up bounce */
+.icon-hover-thumbs-up {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms var(--ease-spring);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-thumbs-up,
+button:hover .icon-hover-thumbs-up,
+.icon-hover-thumbs-up:hover {
+  transform: translateY(-2px) scale(1.15) rotate(-6deg);
+}
+
+/* Thumbs down bounce */
+.icon-hover-thumbs-down {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms var(--ease-spring);
+  will-change: transform;
+}
+
+.group:hover .icon-hover-thumbs-down,
+button:hover .icon-hover-thumbs-down,
+.icon-hover-thumbs-down:hover {
+  transform: translateY(2px) scale(1.15) rotate(6deg);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .icon-hover-scale,
+  .icon-hover-tilt,
+  .icon-hover-rotate-gear,
+  .icon-hover-spin-90,
+  .icon-hover-spin-back,
+  .icon-hover-nudge-up,
+  .icon-hover-arrow-diag,
+  .icon-hover-nudge-right,
+  .icon-hover-nudge-left,
+  .icon-hover-sparkle,
+  .icon-hover-thumbs-up,
+  .icon-hover-thumbs-down {
+    transform: none !important;
+    transition: none !important;
+  }
+}

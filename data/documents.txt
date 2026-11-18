@@ -1,0 +1,10 @@
+
+Python is a high-level, interpreted programming language. It is widely used in web development, automation, data science, and artificial intelligence. Python supports object-oriented, functional, and procedural programming paradigms.
+
+Machine Learning is a subset of Artificial Intelligence. It enables computers to learn patterns from data and make predictions without being explicitly programmed for every task. Common machine learning algorithms include Linear Regression, Decision Trees, Random Forest, and Support Vector Machines.
+
+Deep Learning is a subset of Machine Learning that uses artificial neural networks with multiple layers. It is particularly useful for image recognition, speech recognition, natural language processing, and computer vision.
+
+Artificial Intelligence is a field of computer science focused on developing machines that can perform tasks that typically require human intelligence. These tasks include reasoning, problem-solving, learning, and decision-making.
+
+Natural Language Processing is a branch of Artificial Intelligence that enables computers to understand, interpret, and generate human language. Common applications include chatbots, language translation, sentiment analysis, and text summarization.
