@@ -1,28 +1,20 @@
-from app.querying import answer_question
+from fastapi import FastAPI
 
-def main():
-
-    document_id = input("Enter document ID: ").strip()
-
-    while True:
-
-        query = input("\nAsk your question (exit to quit): ")
-
-        if query.lower().strip() in ["exit", "quit"]:
-            break
-
-        if not query.strip():
-            continue
-
-        try:
-            answer = answer_question(query, document_id)
-
-            print("\nGenerated Answer:")
-            print(answer)
-
-        except Exception as e:
-            print("\nError:", e)
+app = FastAPI(
+    title="Meiporul AI",
+    description="AI-powered document assistant",
+    version="1.0.0"
+)
 
 
-if __name__ == "__main__":
-    main()
+@app.get("/")
+def home():
+    return {
+        "message": "Welcome to Meiporul AI API",
+        "status": "running"
+    }
+
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
