@@ -201,7 +201,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
           <div className="py-2 flex items-center justify-between">
             <span className="text-[#78716C]">Reranking Model</span>
-            <span className="text-[#1C1917]">Cross-Encoder (MS-MARCO-MiniLM)</span>
+            <span className="text-[#1C1917]">mxbai-rerank-xsmall-v1 (Mixedbread AI)</span>
           </div>
           <div className="py-2 flex items-center justify-between">
             <span className="text-[#78716C]">LLM</span>

@@ -218,7 +218,10 @@ export const SourcePreview: React.FC<SourcePreviewProps> = ({
                         {pageLabel}
                       </span>
                       {source.rerank_score !== null && source.rerank_score !== undefined && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#9E4A25]">
+                        <span
+                          className="inline-flex items-center gap-1 text-[11px] font-mono text-[#9E4A25]"
+                          title="Relevance score calculated by mxbai-rerank-xsmall-v1"
+                        >
                           <Sparkles className="w-2.5 h-2.5" />
                           {formatScore(source.rerank_score)}
                         </span>

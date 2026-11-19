@@ -35,8 +35,11 @@ export function formatDate(dateString?: string): string {
 
 export function formatScore(score?: number | null): string {
   if (score === null || score === undefined) return '';
-  const percentage = Math.round(score * 100);
-  return `${percentage}% relevance`;
+  if (score >= 0 && score <= 1) {
+    const percentage = Math.round(score * 100);
+    return `${percentage}% relevance`;
+  }
+  return `${score > 0 ? '+' : ''}${score.toFixed(2)} score`;
 }
 
 export function cleanDocumentName(filename: string): string {
