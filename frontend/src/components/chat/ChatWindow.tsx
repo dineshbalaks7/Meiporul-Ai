@@ -4,7 +4,6 @@ import { ChatMessage as ChatMessageType, SourceItem } from '../../types/chat';
 import { DocumentItem } from '../../types/document';
 import { ChatMessage } from './ChatMessage';
 import { TypingIndicator } from './TypingIndicator';
-import { EmptyChat } from './EmptyChat';
 import { ChatInput } from './ChatInput';
 import { SourcePreview } from '../sources/SourcePreview';
 import { cleanDocumentName } from '../../lib/utils';
@@ -48,6 +47,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [activeSourcesList, setActiveSourcesList] = useState<SourceItem[]>([]);
 
   const selectedDoc = documents.find((d) => d.document_id === selectedDocumentId);
+  const isNewChat = messages.length === 0 && !isGenerating && !isLoadingHistory;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   const handleSelectSource = (source: SourceItem, allSources?: SourceItem[]) => {
     setSelectedSource(source);
@@ -77,25 +79,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div className="relative flex flex-col h-full w-full bg-[#FCFAF7] overflow-hidden">
-      {/* Scrollable conversation stream */}
+    <div className="relative flex flex-col h-full min-h-0 w-full bg-[#FCFAF7] overflow-hidden">
+      {/* Keep a new conversation deliberately quiet: the composer is the entry point. */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-8 py-3 sm:py-6 space-y-3 sm:space-y-4"
+        className={isNewChat ? 'hidden' : 'flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-8 py-3 sm:py-6 space-y-3 sm:space-y-4'}
       >
         {isLoadingHistory ? (
           <div className="flex flex-col items-center justify-center h-full space-y-2 py-20 text-[#A8A29E]">
             <div className="w-5 h-5 border-2 border-[#9E4A25] border-t-transparent rounded-full animate-spin" />
             <p className="text-xs">Loading conversation...</p>
           </div>
-        ) : messages.length === 0 ? (
-          <EmptyChat
-            onSelectPrompt={onSendMessage}
-            onOpenUpload={onOpenUpload}
-            documentCount={documents.length}
-            selectedDocumentName={selectedDoc?.filename}
-          />
         ) : (
           <div className="max-w-2xl mx-auto space-y-3 pt-2">
             {messages.map((message) => (
@@ -121,8 +116,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
       </div>
 
-      {/* Fixed bottom input container with scroll button anchored above it */}
-      <div className="relative w-full shrink-0">
+      {/* Center the composer before a conversation begins; move it to the bottom with the first message. */}
+      <div className={isNewChat ? 'w-full shrink-0 my-auto' : 'relative w-full shrink-0'}>
+        {isNewChat && (
+          <div className="mb-7 px-4 text-center">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-[-0.04em] text-[#1C1917]">
+              {greeting}
+            </h1>
+            <p className="mt-2 text-sm text-[#78716C]">
+              A thought, a question, or a document—start wherever you are.
+            </p>
+          </div>
+        )}
         {/* Floating Scroll to Bottom Button (positioned above the input field) */}
         {showScrollBottom && (
           <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-30">
@@ -146,6 +151,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           onSelectDocument={onSelectDocument}
           onOpenUpload={onOpenUpload}
           onUploadFile={onUploadFile}
+          showDisclaimer={!isNewChat}
           placeholder={
             selectedDoc
               ? `Ask about ${cleanDocumentName(selectedDoc.filename)}...`

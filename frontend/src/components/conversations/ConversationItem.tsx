@@ -35,8 +35,8 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
         onClick={() => onSelect(conversation.conversation_id)}
         className={`group relative flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-left cursor-pointer transition-colors text-xs select-none ${
           isActive
-            ? 'bg-[#F0EAE1] text-[#1C1917] font-medium'
-            : 'text-[#44403C] hover:text-[#1C1917] hover:bg-[#EAE4DC]'
+            ? 'bg-[#F2ECE4] text-[#1C1917] font-medium shadow-subtle'
+            : 'text-[#57534E] hover:text-[#1C1917] hover:bg-[#F7F4EE]'
         }`}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1 pr-1">

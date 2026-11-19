@@ -5,7 +5,6 @@ import {
   Library,
   Pin,
   Clock,
-  Settings as SettingsIcon,
   ChevronsLeft,
   ChevronsRight,
   MoreHorizontal,
@@ -72,12 +71,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`relative flex flex-col h-full bg-[#F7F4EE] border-r border-[#E8E2D7] transition-all duration-300 ease-in-out select-none ${
-        isCollapsed ? 'w-16' : 'w-[250px]'
+      className={`relative flex flex-col h-full bg-[#FCFAF7] border-r border-[#E8E2D7] transition-[width] duration-200 ease-out select-none ${
+        isCollapsed ? 'w-[60px]' : 'w-[264px]'
       }`}
     >
       {/* Brand Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+      <div className="flex items-center justify-between px-3.5 pt-3.5 pb-3">
         <div
           onClick={() => {
             onNewChat();
@@ -86,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex items-center gap-2.5 cursor-pointer group overflow-hidden"
         >
           {/* Logo emblem */}
-          <div className="w-7 h-7 rounded-lg overflow-hidden bg-black shrink-0 shadow-sm border border-black/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-xl overflow-hidden bg-black shrink-0 shadow-sm border border-black/10 flex items-center justify-center transition-transform duration-150 group-active:scale-95">
             <img
               src="/logo.jpg"
               alt="Meiporul AI"
@@ -96,11 +95,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {!isCollapsed && (
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold tracking-tight text-[#1C1917] leading-none">
+              <span className="text-[13px] font-semibold tracking-[-0.02em] text-[#1C1917] leading-none">
                 Meiporul AI
               </span>
               <span className="text-[10px] text-[#A8A29E] tracking-tight mt-0.5 font-normal">
-                Document Assistant
+                Your knowledge workspace
               </span>
             </div>
           )}
@@ -110,7 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="group p-1 rounded-md text-[#A8A29E] hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors"
+          className="group p-1.5 rounded-lg text-[#A8A29E] hover:text-[#1C1917] hover:bg-[#F2ECE4] active:scale-95 transition-[color,background-color,transform] duration-150"
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? (
@@ -122,14 +121,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Top Navigation Items */}
-      <div className="px-2.5 py-1.5 space-y-0.5">
+      <div className="px-3 py-1.5 space-y-1">
         <button
           type="button"
           onClick={() => {
             onNewChat();
             if (currentPage !== 'chat') onNavigate('chat');
           }}
-          className="group w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#1C1917] hover:bg-[#EAE4DC] transition-colors text-left"
+          className="group w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#57534E] hover:text-[#1C1917] hover:bg-[#F2ECE4] active:scale-[0.98] transition-[background-color,color,transform] duration-150 text-left"
         >
           <PenSquare className="w-3.5 h-3.5 text-[#78716C] group-hover:text-[#9E4A25] icon-hover-tilt shrink-0" />
           {!isCollapsed && <span>New chat</span>}
@@ -138,8 +137,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           type="button"
           onClick={() => setShowSearchInput((prev) => !prev)}
-          className={`group w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#1C1917] hover:bg-[#EAE4DC] transition-colors text-left ${
-            showSearchInput ? 'bg-[#EAE4DC]' : ''
+          className={`group w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#57534E] hover:bg-[#F2ECE4] active:scale-[0.98] transition-[background-color,color,transform] duration-150 text-left ${
+            showSearchInput ? 'bg-[#F2ECE4] text-[#1C1917]' : ''
           }`}
         >
           <Search className="w-3.5 h-3.5 text-[#78716C] group-hover:text-[#1C1917] icon-hover-scale shrink-0" />
@@ -176,8 +175,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onNavigate('documents')}
           className={`group w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left ${
             currentPage === 'documents'
-              ? 'bg-[#EAE4DC] text-[#1C1917] font-semibold'
-              : 'text-[#1C1917] hover:bg-[#EAE4DC]'
+              ? 'bg-[#F2ECE4] text-[#1C1917] font-semibold'
+              : 'text-[#57534E] hover:bg-[#F2ECE4]'
           }`}
         >
           <div className="flex items-center gap-2.5">
@@ -194,11 +193,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Middle Scrollable Section: Pinned & History */}
       {!isCollapsed ? (
-        <div className="flex-1 overflow-y-auto px-2.5 py-2 space-y-4">
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
           {/* Pinned Section */}
           {pinnedConversations.length > 0 && (
             <div>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-[#78716C]">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase text-[#A8A29E]">
                 <Pin className="w-3 h-3 text-[#9E4A25] fill-current" />
                 <span>Pinned</span>
               </div>
@@ -222,13 +221,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* History Section */}
           <div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-[#78716C]">
-              <Clock className="w-3 h-3" />
-              <span>History</span>
-            </div>
-
-            <div className="px-2.5 pt-1 pb-0.5 text-[10px] font-semibold text-[#A8A29E] uppercase tracking-wider">
-              Recent
+            <div className="flex items-center justify-between px-2.5 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase text-[#A8A29E]">
+              <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> Chats</span>
+              {conversations.length > 0 && <span className="normal-case tracking-normal font-medium">{conversations.length}</span>}
             </div>
 
             <div className="space-y-0.5">
@@ -274,27 +269,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Bottom Actions Section: Settings & Active User Profile */}
-      <div className="px-2.5 py-2 border-t border-[#E8E2D7] space-y-1 bg-[#F7F4EE]">
-        <button
-          type="button"
+      <div className="px-3 py-3 border-t border-[#E8E2D7] bg-[#FCFAF7]">
+        {/* Profile is the single, contextual entry point to settings. */}
+        <div
           onClick={onOpenSettings}
-          className="group w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#57534E] hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors text-left"
-          title="Settings"
+          className={`flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-[#F2ECE4] cursor-pointer transition-colors ${
+            isCollapsed ? 'justify-center' : ''
+          }`}
+          title="Open profile and settings"
         >
-          <SettingsIcon className="w-3.5 h-3.5 text-[#78716C] group-hover:text-[#9E4A25] icon-hover-rotate-gear shrink-0" />
-          {!isCollapsed && <span>Settings</span>}
-        </button>
-
-        {/* User Profile Pill at Bottom (Reflects the actual user using the app) */}
-        {!isCollapsed && (
-          <div
-            onClick={onOpenSettings}
-            className="pt-2 border-t border-[#E8E2D7] flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-[#EAE4DC] cursor-pointer transition-colors"
-            title="Click to edit user profile in Settings"
-          >
-            <div className="w-7 h-7 rounded-full bg-[#E8DFD3] text-[#713F24] border border-[#D5CDBD] flex items-center justify-center text-[10px] font-bold select-none shrink-0 shadow-subtle">
-              {userInitials}
-            </div>
+          <div className="w-7 h-7 rounded-full bg-[#E8DFD3] text-[#713F24] border border-[#D5CDBD] flex items-center justify-center text-[10px] font-bold select-none shrink-0 shadow-subtle">
+            {userInitials}
+          </div>
+          {!isCollapsed && (
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-[#1C1917] truncate leading-tight">
                 {userProfile.name}
@@ -303,8 +290,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {userProfile.email}
               </p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </aside>
   );

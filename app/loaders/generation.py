@@ -14,10 +14,12 @@ load_dotenv()
 
 MODEL_NAME = "openai/gpt-oss-120b"
 
+# max_tokens raised: gpt-oss is a reasoning model, and reasoning tokens
+# count toward this limit. 300 can produce empty responses.
 llm_utility = ChatGroq(
     model=MODEL_NAME,
     temperature=0,
-    max_tokens=300,
+    max_tokens=800,
     api_key=os.getenv("GROQ_API_KEY"),
     seed=42,
     reasoning_effort="low",
@@ -112,13 +114,48 @@ def _is_time_question(query):
     return any(re.search(pattern, text) for pattern in patterns)
 
 
-def classify_question(query, chat_history=None):
+# Pure greetings / small talk only. Anything longer or more specific
+# falls through to the next checks.
+_CHITCHAT_RE = re.compile(
+    r"^\s*(hi|hii+|hello|hey|thanks|thank you|bye|"
+    r"good (morning|afternoon|evening|night)|"
+    r"who are you|what can you do|how are you)\b[\s!.?]*$",
+    re.IGNORECASE,
+)
+
+# Words that strongly suggest the question is about uploaded files.
+_DOC_SIGNAL_RE = re.compile(
+    r"\b(polic(y|ies)|document|documents|pdf|file|files|uploaded|"
+    r"clause|section|page|according to|as per|handbook|manual|"
+    r"contract|agreement|guidelines?|eligib\w*|requirements?|"
+    r"leave|remote work|work from home|benefits?|summar(y|ize|ise))\b",
+    re.IGNORECASE,
+)
+
+
+def classify_question(query, chat_history=None, has_documents=None):
     """
     Classify the latest message as GENERAL or DOCUMENT.
 
-    Fail safely to DOCUMENT so document-grounded questions
-    do not accidentally bypass retrieval when classification fails.
+    This app is a document-QA system, so the default is DOCUMENT.
+    Only clear non-document messages are routed to GENERAL.
+
+    Order of decisions:
+    1. Empty input            -> GENERAL
+    2. Date/time              -> GENERAL
+    3. Pure greeting/chitchat -> GENERAL
+    4. Document keywords      -> DOCUMENT
+    5. Otherwise ask the LLM, and default to DOCUMENT
+
+    `has_documents` is accepted for backward compatibility but is
+    intentionally NOT used for routing, because it can be computed
+    incorrectly by the caller.
     """
+
+    print(
+        f"[generation.classify_question] CALLED "
+        f"query={query!r} has_documents={has_documents!r}"
+    )
 
     if not isinstance(query, str) or not query.strip():
         return "GENERAL"
@@ -127,36 +164,40 @@ def classify_question(query, chat_history=None):
     if _is_date_question(query) or _is_time_question(query):
         return "GENERAL"
 
+    # Pure greetings never need retrieval.
+    if _CHITCHAT_RE.match(query):
+        return "GENERAL"
+
+    # Strong document signals skip the LLM call entirely.
+    if _DOC_SIGNAL_RE.search(query):
+        print("[generation.classify_question] keyword match -> DOCUMENT")
+        return "DOCUMENT"
+
     history = _conversation_history_text(chat_history)
 
     prompt = f"""You are an intent classifier for Meiporul AI.
+The user HAS uploaded documents to this application.
 
-Classify the user's latest message into exactly one category:
-
-GENERAL:
-- Greetings and casual conversations.
-- General knowledge questions.
-- Programming, coding and educational questions.
-- Everyday questions that do not depend on uploaded files.
-- Questions about the current date or time.
-- Requests for explanations of general concepts.
+Classify the latest message into exactly one category:
 
 DOCUMENT:
-- Questions asking about uploaded PDFs or files.
-- Questions about the contents of uploaded documents.
-- Questions about policies, reports, manuals or contracts that
-  have been uploaded to this application.
-- Requests to summarize, compare, extract or analyze uploaded files.
-- Follow-up questions referring to information retrieved from
-  an uploaded document in the conversation.
+- Anything that could plausibly be answered from the uploaded files.
+- Questions about policies, rules, requirements, processes, reports,
+  manuals or contracts, even if the message does not mention
+  "document" or "PDF" (e.g. "what are the policies", "how many leave days").
+- Requests to summarize, compare, extract or analyze.
+- Follow-ups to a previous document-based answer.
+
+GENERAL:
+- Greetings and casual conversation.
+- Clearly unrelated general knowledge, coding or educational questions
+  (e.g. "what is a neural network", "write a Python loop").
+- Questions about the assistant itself.
 
 Important:
-- Classify based on what the user is asking, not merely the topic.
-- A general question about a policy topic is GENERAL unless it
-  asks about an uploaded document.
-- If the latest message refers to "this document", "that PDF",
-  "the policy", or a previous document answer, classify it as DOCUMENT.
-- Return only GENERAL or DOCUMENT. Do not explain your choice.
+- Because documents are uploaded, when the message is ambiguous
+  choose DOCUMENT.
+- Return only GENERAL or DOCUMENT. Do not explain.
 
 RECENT CONVERSATION:
 {history}
@@ -170,6 +211,8 @@ CATEGORY:
     try:
         response = llm_utility.invoke(prompt)
         result = str(response.content or "").strip().upper()
+
+        print(f"[generation.classify_question] LLM result={result!r}")
 
         # Accept only a clear GENERAL response. Any other or
         # malformed output defaults to DOCUMENT for safer grounding.
@@ -318,15 +361,13 @@ def _needs_decomposition(query):
 # DOCUMENT ANSWER GENERATION
 # ==================================================
 
-def generate_answer(query, retrieved_docs):
+def generate_answer(query, retrieved_docs, strict_mode: bool = False, document_name: str | None = None):
 
-    print("\nPROMPT VERSION: v5-token-optimized")
+    print(f"\nPROMPT VERSION: v5-token-optimized (strict_mode={strict_mode}, doc={document_name})")
 
     if not retrieved_docs:
-        return (
-            "No relevant information was found "
-            "in the uploaded documents."
-        )
+        doc_label = f"the selected document ('{document_name}')" if document_name else "the selected document" if strict_mode else "the uploaded documents"
+        return f"No relevant information was found in {doc_label}."
 
     # --------------------------------------------------
     # BUILD NUMBERED CONTEXT
@@ -344,7 +385,7 @@ def generate_answer(query, retrieved_docs):
 
         source_number = len(context_parts) + 1
 
-        filename = metadata.get("source", "Unknown document")
+        filename = metadata.get("source", document_name or "Unknown document")
         page_number = metadata.get("page_number", "N/A")
 
         context_parts.append(
@@ -355,7 +396,8 @@ def generate_answer(query, retrieved_docs):
         )
 
     if not context_parts:
-        return "No usable document content was found for this question."
+        doc_label = f"the selected document ('{document_name}')" if document_name else "the selected document" if strict_mode else "the uploaded documents"
+        return f"No usable content was found in {doc_label} for this question."
 
     context = "\n\n".join(context_parts)
 
@@ -389,7 +431,33 @@ FORMAT:
     # COMPACT ANSWER PROMPT
     # --------------------------------------------------
 
-    prompt = f"""You are Meiporul AI, a document-grounded question-answering system.
+    if strict_mode:
+        doc_heading = f"the selected document '{document_name}'" if document_name else "the selected document"
+        prompt = f"""You are Meiporul AI acting as a STRICT DOCUMENT QUESTION-ANSWERING SYSTEM.
+
+Your task is to answer the user's question STRICTLY and EXCLUSIVELY using the retrieved context from {doc_heading}.
+
+STRICT RAG RULES (MANDATORY):
+1. You MUST rely ONLY on the clear, explicit facts provided in the CONTEXT below.
+2. DO NOT use any outside knowledge, prior training data, external facts, or personal assumptions.
+3. If the provided context does NOT contain enough evidence or facts to answer the question, or if the question is unrelated to this document (e.g. general knowledge, baking recipes, coding advice, outside trivia), you MUST REFUSE to answer with outside knowledge and state:
+"The selected document does not contain information to answer this question."
+4. Never speculate, extrapolate, or guess.
+5. Every single factual statement or claim in your response MUST include citation numbers corresponding to the source numbers in the context (e.g. [1], [2]).
+6. Do NOT invent citation numbers. Only use citation numbers that exist in the CONTEXT.
+
+{format_rule}
+
+CONTEXT:
+{context}
+
+QUESTION:
+{query}
+
+ANSWER:
+"""
+    else:
+        prompt = f"""You are Meiporul AI, a document-grounded question-answering system.
 
 Answer the user's question using ONLY the retrieved context.
 

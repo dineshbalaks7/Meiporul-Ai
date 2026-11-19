@@ -116,7 +116,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onDeleteCurrentChat={handleDeleteActiveChat}
         />
 
-        <main className="flex-1 overflow-hidden relative">
+        <main className="flex-1 min-h-0 overflow-hidden relative">
           {children}
         </main>
       </div>

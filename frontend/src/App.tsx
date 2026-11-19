@@ -46,6 +46,7 @@ export const AppContent: React.FC = () => {
     renameConversation,
     togglePinConversation,
     startNewChat,
+    clearAllConversations,
   } = useConversations();
 
   // Chat Experience Hook
@@ -83,6 +84,15 @@ export const AppContent: React.FC = () => {
     startNewChat();
     clearChat();
     setCurrentPage('chat');
+  };
+
+  const handleStartFresh = async () => {
+    const cleared = await clearAllConversations();
+    if (cleared) {
+      clearChat();
+      setCurrentPage('chat');
+    }
+    return cleared;
   };
 
   const handleOpenChatWithDocument = (docId: string) => {
@@ -169,6 +179,8 @@ export const AppContent: React.FC = () => {
         conversationCount={conversations.length}
         userProfile={userProfile}
         onUpdateUserProfile={updateProfile}
+        onStartFresh={handleStartFresh}
+        onClearAllChats={handleStartFresh}
       />
     </>
   );

@@ -113,6 +113,39 @@
   }
 }
 
+/* The application uses a warm palette in utility classes; these overrides map
+   those shared surfaces and foregrounds to the equivalent dark palette. */
+html.dark {
+  --bg-canvas: #181614;
+  --bg-main: #181614;
+  --surface: #24211e;
+  --sidebar: #1f1c19;
+  --text-primary: #f3eee8;
+  --text-secondary: #b8b1aa;
+  --border-color: #47413b;
+  --accent: #d58054;
+  --accent-hover: #e49467;
+}
+
+html.dark body { background-color: var(--bg-canvas); color: var(--text-primary); }
+html.dark [class*="bg-white"],
+html.dark [class*="bg-[#F"],
+html.dark [class*="bg-[#E"],
+html.dark [class*="bg-[#D"] { background-color: #24211e !important; }
+html.dark [class*="border-[#"] { border-color: #47413b !important; }
+html.dark [class*="text-[#1"],
+html.dark [class*="text-[#4"],
+html.dark [class*="text-[#5"],
+html.dark [class*="text-[#7"] { color: #f3eee8 !important; }
+html.dark [class*="text-[#8"],
+html.dark [class*="text-[#A"] { color: #b8b1aa !important; }
+html.dark .answer code { background-color: #322e2a; }
+html.dark .answer pre { background-color: #11100f; }
+
+/* Preserve multi-line typing without exposing a nested scrollbar in the composer. */
+.chat-composer-textarea { scrollbar-width: none; }
+.chat-composer-textarea::-webkit-scrollbar { display: none; }
+
 /* ==========================================================================
    Chat Answer Markdown Formatting (.answer)
    Overrides CSS reset (Preflight) for lists, headings, and paragraphs

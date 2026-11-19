@@ -11,6 +11,7 @@ from app.services.conversation_service import (
     conversation_exists,
     list_conversations,
     delete_conversation,
+    delete_all_conversations,
     rename_conversation,
     toggle_pin_conversation
 )
@@ -135,6 +136,15 @@ def get_all_conversations():
 
 
 # 4. Delete a conversation
+@router.delete("/conversations")
+def remove_all_conversations():
+    deleted_count = delete_all_conversations()
+    return {
+        "message": "All conversations deleted successfully.",
+        "deleted_count": deleted_count,
+    }
+
+
 @router.delete("/conversations/{conversation_id}")
 def remove_conversation(conversation_id: str):
 

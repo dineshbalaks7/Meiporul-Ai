@@ -14,6 +14,7 @@ interface ChatInputProps {
   onOpenUpload?: () => void;
   onUploadFile?: (file: File) => Promise<any> | void;
   placeholder?: string;
+  showDisclaimer?: boolean;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -25,6 +26,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onOpenUpload,
   onUploadFile,
   placeholder = 'Ask Meiporul AI...',
+  showDisclaimer = false,
 }) => {
   const [input, setInput] = useState('');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -129,18 +131,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     {
       id: 'all',
       label: 'All Documents (ChromaDB)',
-      description: `Search across all ${documents.length} indexed files`,
+      description: !selectedDocumentId
+        ? `Search across all ${documents.length} indexed files • Multi-Doc RAG`
+        : `Search across all ${documents.length} indexed files`,
       icon: !selectedDocumentId ? <Check className="w-3.5 h-3.5 text-[#9E4A25]" /> : undefined,
       onClick: () => onSelectDocument(null),
     },
     ...documents.map((doc) => ({
       id: doc.document_id,
       label: doc.filename,
-      description: `${doc.total_chunks} chunks`,
+      description: selectedDocumentId === doc.document_id
+        ? `${doc.total_chunks} chunks • Strict RAG Active`
+        : `${doc.total_chunks} chunks • Strict RAG`,
       icon: selectedDocumentId === doc.document_id ? <Check className="w-3.5 h-3.5 text-[#9E4A25]" /> : undefined,
       onClick: () => onSelectDocument(doc.document_id),
     })),
   ];
+
+  const computedPlaceholder = selectedDoc
+    ? `Ask about ${selectedDoc.filename} (Strict RAG)...`
+    : placeholder;
 
   return (
     <div
@@ -226,11 +236,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={computedPlaceholder}
           disabled={isLoading}
           rows={1}
           enterKeyHint="send"
-          className="relative z-10 w-full px-3.5 sm:px-4 pt-3 sm:pt-3.5 pb-2 text-base sm:text-sm text-[#1C1917] placeholder:text-[#A8A29E] bg-transparent resize-none focus:outline-none max-h-40 disabled:opacity-60 leading-relaxed"
+          className="chat-composer-textarea relative z-10 w-full px-3.5 sm:px-4 pt-3 sm:pt-3.5 pb-2 text-base sm:text-sm text-[#1C1917] placeholder:text-[#A8A29E] bg-transparent resize-none overflow-y-auto overscroll-contain focus:outline-none max-h-40 disabled:opacity-60 leading-relaxed"
         />
 
         {/* Action bar inside input bottom */}
@@ -262,9 +272,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium text-[#57534E] hover:text-[#1C1917] hover:bg-[#F2ECE4] active:bg-[#EAE4DC] transition-colors cursor-pointer"
+                  className={cn(
+                    "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer",
+                    selectedDoc
+                      ? "bg-[#F5EBE1] text-[#9E4A25] font-semibold border border-[#9E4A25]/30 shadow-xs"
+                      : "text-[#57534E] hover:text-[#1C1917] hover:bg-[#F2ECE4] active:bg-[#EAE4DC]"
+                  )}
+                  title={selectedDoc ? `Strict RAG: Scoped to ${selectedDoc.filename}` : "Select document scope"}
                 >
-                  <SlidersHorizontal className="w-3 h-3 text-[#78716C] icon-hover-scale shrink-0" />
+                  <SlidersHorizontal className={cn("w-3 h-3 shrink-0", selectedDoc ? "text-[#9E4A25]" : "text-[#78716C]")} />
                   <span className="truncate max-w-[110px] sm:max-w-[200px]">
                     {selectedDoc ? selectedDoc.filename : 'Tools'}
                   </span>
@@ -303,10 +319,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       </motion.div>
 
-      {/* Caption footer as shown in the screenshot */}
-      <p className="text-[10px] sm:text-[11px] text-[#A8A29E] text-center mt-2 sm:mt-2.5 select-none">
-        AI can make mistakes. Please double-check responses.
-      </p>
+      {showDisclaimer && (
+        <p className="text-[10px] sm:text-[11px] text-[#A8A29E] text-center mt-2 sm:mt-2.5 select-none">
+          AI can make mistakes. Please double-check responses.
+        </p>
+      )}
+
     </div>
   );
 };

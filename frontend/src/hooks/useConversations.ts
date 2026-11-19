@@ -102,6 +102,20 @@ export function useConversations() {
     setActiveConversationId(null);
   }, []);
 
+  const clearAllConversations = useCallback(async (): Promise<boolean> => {
+    try {
+      const { deleted_count } = await conversationService.deleteAllConversations();
+      setConversations([]);
+      setActiveConversationId(null);
+      success('Started fresh', `${deleted_count} chat${deleted_count === 1 ? '' : 's'} cleared.`);
+      return true;
+    } catch (err) {
+      const parsed = parseApiError(err);
+      toastError('Unable to clear chats', parsed.message);
+      return false;
+    }
+  }, [success, toastError]);
+
   return {
     conversations,
     activeConversationId,
@@ -113,5 +127,6 @@ export function useConversations() {
     renameConversation,
     togglePinConversation,
     startNewChat,
+    clearAllConversations,
   };
 }

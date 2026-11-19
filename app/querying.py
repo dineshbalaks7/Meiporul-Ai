@@ -9,8 +9,10 @@ from app.loaders.generation import (
     decompose_question,
     classify_question,
     generate_general_answer,
+    _CHITCHAT_RE,
 )
 from app.services.citation_service import normalize_citations
+from app.services.document_manager import get_document_info
 
 
 # ==================================================
@@ -276,35 +278,67 @@ def answer_question(query, document_id=None, chat_history=None):
     query = query.strip()
     chat_history = chat_history or []
 
-    # --------------------------------------------------
-    # 0. INTENT CLASSIFICATION
-    # --------------------------------------------------
+    # Clean and validate document_id
+    if document_id:
+        document_id = str(document_id).strip()
+        if not document_id:
+            document_id = None
 
-    intent = classify_question(
-        query,
-        chat_history
-    )
-
-    print("\n========== INTENT CLASSIFICATION ==========")
-    print("Original question:", query)
-    print("Detected intent:", intent)
-    print("===========================================\n")
+    selected_document_name = None
+    if document_id:
+        doc_info = get_document_info(document_id)
+        if doc_info:
+            selected_document_name = doc_info.get("filename")
 
     # --------------------------------------------------
-    # GENERAL CONVERSATION
+    # 0. INTENT CLASSIFICATION / STRICT RAG ROUTING
     # --------------------------------------------------
 
-    if intent == "GENERAL":
+    if document_id:
+        # STRICT RAG MODE: User explicitly selected a specific document.
+        # Bypass general LLM fallback and enforce document-grounded answering.
+        intent = "DOCUMENT"
 
-        answer = generate_general_answer(
+        print("\n========== STRICT RAG MODE ==========")
+        print(f"Target Document ID: {document_id}")
+        print(f"Target Document Name: {selected_document_name or 'Unknown'}")
+        print("Intent: DOCUMENT (Forced by document selection)")
+        print("======================================\n")
+
+        # Conversational greeting check for strict document mode
+        if _CHITCHAT_RE.match(query):
+            doc_label = f"**{selected_document_name}**" if selected_document_name else "the selected document"
+            return {
+                "answer": (
+                    f"Hello! I am operating in strict document mode for {doc_label}. "
+                    "Ask me any question about this document, and I will answer strictly based on its contents."
+                ),
+                "sources": [],
+            }
+
+    else:
+        # Multi-document or general conversational mode
+        intent = classify_question(
             query,
             chat_history
         )
 
-        return {
-            "answer": answer,
-            "sources": [],
-        }
+        print("\n========== INTENT CLASSIFICATION ==========")
+        print("Original question:", query)
+        print("Detected intent:", intent)
+        print("===========================================\n")
+
+        if intent == "GENERAL":
+
+            answer = generate_general_answer(
+                query,
+                chat_history
+            )
+
+            return {
+                "answer": answer,
+                "sources": [],
+            }
 
     # --------------------------------------------------
     # 1. QUESTION REWRITING
@@ -389,11 +423,10 @@ def answer_question(query, document_id=None, chat_history=None):
     ]
 
     if not retrieved_docs:
-
+        doc_label = f"the selected document ('{selected_document_name}')" if selected_document_name else "the selected document" if document_id else "the uploaded documents"
         return {
             "answer": (
-                "No relevant information was found "
-                "in the uploaded documents."
+                f"No relevant information was found in {doc_label}."
             ),
             "sources": [],
         }
@@ -469,11 +502,10 @@ def answer_question(query, document_id=None, chat_history=None):
         )
 
     if not final_docs:
-
+        doc_label = f"the selected document ('{selected_document_name}')" if selected_document_name else "the selected document" if document_id else "the uploaded documents"
         return {
             "answer": (
-                "No relevant information was found "
-                "in the uploaded documents."
+                f"No relevant information was found in {doc_label}."
             ),
             "sources": [],
         }
@@ -485,9 +517,9 @@ def answer_question(query, document_id=None, chat_history=None):
     final_docs = _limit_context(final_docs)
 
     if not final_docs:
-
+        doc_label = f"the selected document ('{selected_document_name}')" if selected_document_name else "the selected document" if document_id else "the uploaded documents"
         return {
-            "answer": "No usable document content was found.",
+            "answer": f"No usable content was found in {doc_label}.",
             "sources": [],
         }
 
@@ -531,6 +563,8 @@ def answer_question(query, document_id=None, chat_history=None):
     answer = generate_answer(
         query=query,
         retrieved_docs=final_docs,
+        strict_mode=bool(document_id),
+        document_name=selected_document_name,
     )
 
     if not isinstance(answer, str):
@@ -565,7 +599,7 @@ def answer_question(query, document_id=None, chat_history=None):
         sources.append({
             "filename": metadata.get(
                 "source",
-                "Unknown document",
+                selected_document_name or "Unknown document",
             ),
             "page_number": metadata.get(
                 "page_number",
@@ -583,6 +617,18 @@ def answer_question(query, document_id=None, chat_history=None):
         answer,
         sources,
     )
+
+    # If the strict RAG model replied with a refusal that the document does not contain the answer,
+    # ensure no dangling source badges are displayed.
+    refusal_signals = [
+        "does not contain information",
+        "not contain information",
+        "does not mention",
+        "not mentioned in the selected document",
+        "not found in the selected document",
+    ]
+    if any(sig in result.get("answer", "").lower() for sig in refusal_signals):
+        result["sources"] = []
 
     print("\n========== FINAL RESULT ==========")
     print(

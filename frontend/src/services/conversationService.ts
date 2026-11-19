@@ -35,6 +35,11 @@ export const conversationService = {
     return response.data;
   },
 
+  async deleteAllConversations(): Promise<{ deleted_count: number }> {
+    const response = await apiClient.delete<{ deleted_count: number }>('/api/chat/conversations');
+    return response.data;
+  },
+
   /**
    * Rename a conversation title
    */

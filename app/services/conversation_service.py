@@ -296,3 +296,13 @@ def delete_conversation(conversation_id):
 
     return True
 
+
+def delete_all_conversations():
+    """Remove every stored conversation and its messages, returning the count."""
+    with get_connection() as connection:
+        cursor = connection.execute("SELECT COUNT(*) FROM conversations")
+        count = cursor.fetchone()[0]
+        connection.execute("DELETE FROM messages")
+        connection.execute("DELETE FROM conversations")
+    return count
+

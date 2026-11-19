@@ -39,6 +39,33 @@ def list_documents():
 
     return list(documents.values())
 
+
+def get_document_info(document_id: str):
+    """Retrieve document metadata by document_id quickly from vector store."""
+    if not document_id:
+        return None
+
+    try:
+        vector_store = get_vector_store()
+        records = vector_store.get(
+            where={"document_id": document_id},
+            limit=1,
+            include=["metadatas"]
+        )
+
+        metadatas = records.get("metadatas") if records else []
+        if metadatas and len(metadatas) > 0 and metadatas[0]:
+            meta = metadatas[0]
+            return {
+                "document_id": document_id,
+                "filename": meta.get("source", "Unknown document"),
+                "file_type": meta.get("file_type", ""),
+            }
+    except Exception as error:
+        print(f"Error fetching document info for {document_id}: {error}")
+
+    return None
+
 def find_duplicate_document(file_hash):
 
     vector_store = get_vector_store()

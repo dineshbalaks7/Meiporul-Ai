@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Sun,
   Moon,
@@ -27,6 +27,8 @@ interface SettingsModalProps {
   conversationCount: number;
   userProfile: UserProfile;
   onUpdateUserProfile: (newProfile: Partial<UserProfile>) => void;
+  onStartFresh?: () => Promise<boolean>;
+  onClearAllChats?: () => Promise<boolean>;
 }
 
 type SettingsTab = 'general' | 'backend' | 'about';
@@ -40,11 +42,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   conversationCount,
   userProfile,
   onUpdateUserProfile,
+  onStartFresh,
+  onClearAllChats,
 }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    const saved = localStorage.getItem('meiporul-theme');
+    return saved === 'dark' || saved === 'system' || saved === 'light' ? saved : 'light';
+  });
   const [isChecking, setIsChecking] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isStartingFresh, setIsStartingFresh] = useState(false);
 
   // Profile form state
   const [nameInput, setNameInput] = useState(userProfile.name);
@@ -52,6 +60,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isProfileSaved, setIsProfileSaved] = useState(false);
 
   const { success } = useToast();
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = () => {
+      const isDark = theme === 'dark' || (theme === 'system' && media.matches);
+      document.documentElement.classList.toggle('dark', isDark);
+      document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+    };
+    applyTheme();
+    localStorage.setItem('meiporul-theme', theme);
+    if (theme === 'system') media.addEventListener('change', applyTheme);
+    return () => media.removeEventListener('change', applyTheme);
+  }, [theme]);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,11 +94,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     success('Connection check complete', 'Updated backend service status.');
   };
 
-  const handleClearPreferences = () => {
-    localStorage.clear();
-    setTheme('light');
+  const handleClearAllChats = async () => {
+    setIsStartingFresh(true);
+    const clearFn = onClearAllChats || onStartFresh;
+    const cleared = clearFn ? await clearFn() : false;
+    setIsStartingFresh(false);
+    if (!cleared) return;
+    // Only delete chats: DO NOT touch localStorage, user profile, or theme!
     setShowClearConfirm(false);
-    success('Preferences reset', 'Local UI preferences restored to defaults.');
+    success('Chats cleared', 'All conversation history has been deleted.');
   };
 
   return (
@@ -245,24 +270,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
 
-              {/* Reset preferences */}
-              <div className="pt-2 border-t border-[#E8E2D7] flex items-center justify-between">
-                <div>
+              {/* Delete all chats */}
+              <div className="pt-2.5 border-t border-[#E8E2D7] flex items-center justify-between gap-3">
+                <div className="min-w-0 pr-2">
                   <h4 className="text-xs font-semibold text-[#1C1917]">
-                    Reset UI Preferences
+                    Delete all chats
                   </h4>
-                  <p className="text-[10px] text-[#78716C]">
-                    Restore display settings to defaults.
+                  <p className="text-[10px] text-[#78716C] leading-relaxed">
+                    Permanently delete all conversation history. Your indexed documents, profile, and preferences remain safe.
                   </p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowClearConfirm(true)}
-                  leftIcon={<Trash2 className="w-3 h-3 text-brand-error" />}
-                  className="text-brand-error hover:bg-red-50 border-red-200 text-xs h-7"
+                  leftIcon={<Trash2 className="w-3.5 h-3.5 text-brand-error" />}
+                  className="text-brand-error hover:bg-red-50 border-red-200 text-xs h-8 px-3 whitespace-nowrap shrink-0"
                 >
-                  Reset
+                  Delete all chats
                 </Button>
               </div>
             </div>
@@ -364,22 +389,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
       </div>
 
-      {/* Confirmation Dialog for Reset */}
+      {/* Confirmation dialog for deleting all chats */}
       <Dialog
         isOpen={showClearConfirm}
         onClose={() => setShowClearConfirm(false)}
-        title="Reset Preferences"
-        description="Are you sure you want to restore default preferences?"
+        title="Delete all chats?"
+        description="This permanently deletes all your saved conversations and message history."
       >
         <p className="text-xs text-[#78716C] py-2">
-          This will reset local display configurations without affecting any indexed documents or chat history.
+          Only your conversations will be cleared. Your indexed documents, profile, and theme settings will not be affected.
         </p>
         <div className="mt-4 flex items-center justify-end gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowClearConfirm(false)}>
             Cancel
           </Button>
-          <Button variant="danger" size="sm" onClick={handleClearPreferences}>
-            Confirm Reset
+          <Button variant="danger" size="sm" onClick={handleClearAllChats} isLoading={isStartingFresh} className="whitespace-nowrap">
+            Delete all chats
           </Button>
         </div>
       </Dialog>
