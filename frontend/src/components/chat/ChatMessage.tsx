@@ -10,11 +10,13 @@ import {
   MoreHorizontal,
   AlertCircle,
   Pencil,
+  Timer,
 } from 'lucide-react';
 import { ChatMessage as ChatMessageType, SourceItem } from '../../types/chat';
 import { AnswerView } from './AnswerView';
 import { useToast } from '../ui/Toast';
 import { Button } from '../ui/Button';
+import { Tooltip } from '../ui/Tooltip';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -208,76 +210,88 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 sources={message.sources}
               />
 
-              {/* Message Action Toolbar */}
-              <div className="flex items-center gap-1 pt-0.5 text-[#A8A29E]">
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className="group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer"
-                  title="Copy to clipboard"
-                  aria-label="Copy assistant answer"
-                >
-                  {copied ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-600 icon-hover-scale" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5 icon-hover-scale group-hover/btn:text-[#1C1917]" />
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setLiked(liked === true ? null : true)}
-                  className={`group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer ${
-                    liked === true ? 'text-[#9E4A25]' : ''
-                  }`}
-                  title="Good response"
-                  aria-label="Good response"
-                >
-                  <ThumbsUp className="w-3.5 h-3.5 icon-hover-thumbs-up" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setLiked(liked === false ? null : false)}
-                  className={`group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer ${
-                    liked === false ? 'text-red-500' : ''
-                  }`}
-                  title="Bad response"
-                  aria-label="Bad response"
-                >
-                  <ThumbsDown className="w-3.5 h-3.5 icon-hover-thumbs-down" />
-                </button>
-
-                {onRetry && (
+              {/* Message Action Toolbar + Generation Time Tag */}
+              <div className="flex items-center justify-between gap-2 pt-0.5 text-[#A8A29E]">
+                <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={onRetry}
+                    onClick={handleCopy}
                     className="group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer"
-                    title="Regenerate response"
-                    aria-label="Regenerate response"
+                    title="Copy to clipboard"
+                    aria-label="Copy assistant answer"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 icon-hover-spin-back group-hover/btn:text-[#1C1917]" />
+                    {copied ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-600 icon-hover-scale" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 icon-hover-scale group-hover/btn:text-[#1C1917]" />
+                    )}
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setLiked(liked === true ? null : true)}
+                    className={`group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer ${
+                      liked === true ? 'text-[#9E4A25]' : ''
+                    }`}
+                    title="Good response"
+                    aria-label="Good response"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5 icon-hover-thumbs-up" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setLiked(liked === false ? null : false)}
+                    className={`group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer ${
+                      liked === false ? 'text-red-500' : ''
+                    }`}
+                    title="Bad response"
+                    aria-label="Bad response"
+                  >
+                    <ThumbsDown className="w-3.5 h-3.5 icon-hover-thumbs-down" />
+                  </button>
+
+                  {onRetry && (
+                    <button
+                      type="button"
+                      onClick={onRetry}
+                      className="group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer"
+                      title="Regenerate response"
+                      aria-label="Regenerate response"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 icon-hover-spin-back group-hover/btn:text-[#1C1917]" />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleShareMessage}
+                    className="group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer"
+                    title="Share response"
+                    aria-label="Share response"
+                  >
+                    <Share2 className="w-3.5 h-3.5 icon-hover-scale group-hover/btn:text-[#9E4A25]" />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer"
+                    title="More actions"
+                    aria-label="More actions"
+                  >
+                    <MoreHorizontal className="w-3.5 h-3.5 icon-hover-scale" />
+                  </button>
+                </div>
+
+                {message.latency !== undefined && message.latency !== null && (
+                  <Tooltip content={`Response generated in ${message.latency.toFixed(2)}s`} position="top">
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-mono font-medium text-[#78716C] bg-[#F7F4EE] border border-[#E8E2D7] shadow-2xs select-none hover:border-[#D5CDBD] hover:text-[#1C1917] transition-colors cursor-default">
+                      <Timer className="w-3 h-3 text-[#9E4A25]" />
+                      <span className="text-[10px] text-[#A8A29E] hidden sm:inline font-sans font-normal">Generated in</span>
+                      <span>{message.latency < 1 ? `${Math.round(message.latency * 1000)}ms` : `${message.latency.toFixed(1)}s`}</span>
+                    </div>
+                  </Tooltip>
                 )}
-
-                <button
-                  type="button"
-                  onClick={handleShareMessage}
-                  className="group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer"
-                  title="Share response"
-                  aria-label="Share response"
-                >
-                  <Share2 className="w-3.5 h-3.5 icon-hover-scale group-hover/btn:text-[#9E4A25]" />
-                </button>
-
-                <button
-                  type="button"
-                  className="group/btn p-1 rounded hover:text-[#1C1917] hover:bg-[#EAE4DC] transition-colors cursor-pointer"
-                  title="More actions"
-                  aria-label="More actions"
-                >
-                  <MoreHorizontal className="w-3.5 h-3.5 icon-hover-scale" />
-                </button>
               </div>
             </>
           )}

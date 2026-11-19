@@ -18,6 +18,7 @@ export interface ConversationHistoryMessage {
   role: 'user' | 'assistant';
   content: string;
   sources?: SourceItem[];
+  latency?: number | null;
 }
 
 export interface ConversationHistoryResponse {

@@ -1,4 +1,5 @@
 
+import time
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -62,12 +63,14 @@ def chat_with_documents(request: ChatRequest):
             limit=10
         )
 
-        # Generate context-aware answer
+        # Generate context-aware answer and record generation latency
+        start_time = time.time()
         result = answer_question(
             query=request.question,
             document_id=request.document_id,
             chat_history=chat_history
         )
+        latency = round(time.time() - start_time, 2)
 
         # Save user message and assistant response
         save_message(
@@ -80,7 +83,8 @@ def chat_with_documents(request: ChatRequest):
             conversation_id,
             "assistant",
             result["answer"],
-            sources=result["sources"]
+            sources=result["sources"],
+            latency=latency
         )
 
         return {
@@ -88,7 +92,8 @@ def chat_with_documents(request: ChatRequest):
             "question": request.question,
             "document_id": request.document_id,
             "answer": result["answer"],
-            "sources": result["sources"]
+            "sources": result["sources"],
+            "latency": latency
         }
 
     except HTTPException:

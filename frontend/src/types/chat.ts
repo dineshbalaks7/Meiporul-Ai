@@ -18,6 +18,7 @@ export interface ChatResponse {
   document_id: string | null;
   answer: string;
   sources: SourceItem[];
+  latency?: number;
 }
 
 export interface ChatMessage {
@@ -28,4 +29,5 @@ export interface ChatMessage {
   timestamp?: string;
   status?: 'sending' | 'sent' | 'error';
   errorMessage?: string;
+  latency?: number;
 }

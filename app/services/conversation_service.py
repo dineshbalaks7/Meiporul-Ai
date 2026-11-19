@@ -45,6 +45,11 @@ def initialize_chat_database():
                 connection.execute("ALTER TABLE messages ADD COLUMN sources TEXT DEFAULT NULL")
             except Exception:
                 pass
+        if "latency" not in columns:
+            try:
+                connection.execute("ALTER TABLE messages ADD COLUMN latency REAL DEFAULT NULL")
+            except Exception:
+                pass
 
         # Add title and is_pinned columns to conversations if upgrading
         cursor_conv = connection.execute("PRAGMA table_info(conversations)")
@@ -87,7 +92,7 @@ def create_conversation():
 import json
 
 
-def save_message(conversation_id, role, content, sources=None):
+def save_message(conversation_id, role, content, sources=None, latency=None):
 
     sources_str = json.dumps(sources) if sources is not None else None
 
@@ -99,11 +104,12 @@ def save_message(conversation_id, role, content, sources=None):
                 conversation_id,
                 role,
                 content,
-                sources
+                sources,
+                latency
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (conversation_id, role, content, sources_str)
+            (conversation_id, role, content, sources_str, latency)
         )
 
 
@@ -113,7 +119,7 @@ def get_conversation_history(conversation_id, limit=10):
 
         cursor = connection.execute(
             """
-            SELECT role, content, sources
+            SELECT role, content, sources, latency
             FROM messages
             WHERE conversation_id = ?
             ORDER BY id DESC
@@ -128,7 +134,9 @@ def get_conversation_history(conversation_id, limit=10):
     messages.reverse()
 
     results = []
-    for role, content, sources_raw in messages:
+    for row in messages:
+        role, content, sources_raw = row[0], row[1], row[2]
+        latency_val = row[3] if len(row) > 3 else None
         msg = {
             "role": role,
             "content": content
@@ -138,6 +146,8 @@ def get_conversation_history(conversation_id, limit=10):
                 msg["sources"] = json.loads(sources_raw)
             except Exception:
                 msg["sources"] = []
+        if latency_val is not None:
+            msg["latency"] = latency_val
         results.append(msg)
 
     return results

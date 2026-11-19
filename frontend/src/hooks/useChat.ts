@@ -47,6 +47,7 @@ export function useChat({
           role: m.role,
           content: m.content,
           sources: m.sources || [],
+          latency: m.latency ?? undefined,
           status: 'sent',
         }));
         setMessages(loaded);
@@ -92,6 +93,8 @@ export function useChat({
         setLoadingStep('generating');
       }, 1400);
 
+      const startTime = performance.now();
+
       try {
         const response = await chatService.sendMessage({
           question: trimmed,
@@ -104,11 +107,15 @@ export function useChat({
           setActiveConversationId(response.conversation_id);
         }
 
+        const clientDuration = Math.round((performance.now() - startTime) / 100) / 10;
+        const latency = typeof response.latency === 'number' ? response.latency : clientDuration;
+
         const assistantMessage: ChatMessage = {
           id: assistantMessageId,
           role: 'assistant',
           content: response.answer,
           sources: response.sources || [],
+          latency,
           timestamp: new Date().toISOString(),
           status: 'sent',
         };
