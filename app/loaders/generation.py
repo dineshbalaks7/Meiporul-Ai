@@ -14,46 +14,82 @@ load_dotenv()
 
 MODEL_NAME = "openai/gpt-oss-120b"
 
-# max_tokens raised: gpt-oss is a reasoning model, and reasoning tokens
-# count toward this limit. 300 can produce empty responses.
-llm_utility = ChatGroq(
-    model=MODEL_NAME,
-    temperature=0,
-    max_tokens=800,
-    api_key=os.getenv("GROQ_API_KEY"),
-    seed=42,
-    reasoning_effort="low",
-)
+_llm_utility = None
+_llm_answer = None
+_llm_general = None
 
-llm_answer = ChatGroq(
-    model=MODEL_NAME,
-    temperature=0,
-    max_tokens=2500,
-    api_key=os.getenv("GROQ_API_KEY"),
-    seed=42,
-    reasoning_effort="low",
-)
 
-# General conversation model.
-llm_general = ChatGroq(
-    model=MODEL_NAME,
-    temperature=0.3,
-    max_tokens=2500,
-    api_key=os.getenv("GROQ_API_KEY"),
-    seed=42,
-    reasoning_effort="low",
-)
+def _get_api_key():
+    key = os.getenv("GROQ_API_KEY")
+    if not key or not key.strip():
+        print("[WARNING] GROQ_API_KEY is not set or empty in environment!")
+    return key or "missing_key"
+
+
+def get_llm_utility():
+    global _llm_utility
+    if _llm_utility is None:
+        _llm_utility = ChatGroq(
+            model=MODEL_NAME,
+            temperature=0,
+            max_tokens=800,
+            api_key=_get_api_key(),
+            seed=42,
+            reasoning_effort="low",
+        )
+    return _llm_utility
+
+
+def get_llm_answer():
+    global _llm_answer
+    if _llm_answer is None:
+        _llm_answer = ChatGroq(
+            model=MODEL_NAME,
+            temperature=0,
+            max_tokens=2500,
+            api_key=_get_api_key(),
+            seed=42,
+            reasoning_effort="low",
+        )
+    return _llm_answer
+
+
+def get_llm_general():
+    global _llm_general
+    if _llm_general is None:
+        _llm_general = ChatGroq(
+            model=MODEL_NAME,
+            temperature=0.3,
+            max_tokens=2500,
+            api_key=_get_api_key(),
+            seed=42,
+            reasoning_effort="low",
+        )
+    return _llm_general
+
+
+class _LazyChatGroq:
+    """Transparent proxy that defers ChatGroq initialization until first invoke."""
+
+    def __init__(self, getter):
+        self._getter = getter
+
+    def __getattr__(self, name):
+        return getattr(self._getter(), name)
+
+    def invoke(self, *args, **kwargs):
+        return self._getter().invoke(*args, **kwargs)
+
+
+llm_utility = _LazyChatGroq(get_llm_utility)
+llm_answer = _LazyChatGroq(get_llm_answer)
+llm_general = _LazyChatGroq(get_llm_general)
 
 MAX_SUB_QUERIES = 3
 
 # India Standard Time (UTC+05:30). A fixed offset avoids
 # Windows timezone-database dependencies.
 IST = timezone(timedelta(hours=5, minutes=30))
-
-print("LOADED generation.py:", __file__)
-print("Utility max tokens:", llm_utility.max_tokens)
-print("Answer max tokens:", llm_answer.max_tokens)
-print("General max tokens:", llm_general.max_tokens)
 
 
 # ==================================================

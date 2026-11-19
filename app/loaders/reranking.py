@@ -3,13 +3,34 @@ import torch
 from collections import Counter
 from sentence_transformers import CrossEncoder
 
-# SOTA 2024 lightweight reranker from mixedbread.ai
-# float32 on CPU achieves ~23ms per pair inference with high precision (~250MB RAM)
-reranker = CrossEncoder(
-    "mixedbread-ai/mxbai-rerank-xsmall-v1",
-    max_length=512,
-    model_kwargs={"torch_dtype": torch.float32}
-)
+_reranker = None
+
+
+def get_reranker():
+    """Lazy load CrossEncoder reranker so server boots instantly."""
+    global _reranker
+    if _reranker is None:
+        print("[RERANKER] Loading mixedbread-ai/mxbai-rerank-xsmall-v1...")
+        _reranker = CrossEncoder(
+            "mixedbread-ai/mxbai-rerank-xsmall-v1",
+            max_length=512,
+            model_kwargs={"torch_dtype": torch.float32}
+        )
+        print("[RERANKER] Reranker model loaded successfully.")
+    return _reranker
+
+
+class _LazyReranker:
+    """Transparent proxy that defers model loading until predict is called."""
+
+    def __getattr__(self, name):
+        return getattr(get_reranker(), name)
+
+    def predict(self, *args, **kwargs):
+        return get_reranker().predict(*args, **kwargs)
+
+
+reranker = _LazyReranker()
 
 
 def rerank_documents(query, retrieved_docs):
@@ -19,7 +40,7 @@ def rerank_documents(query, retrieved_docs):
         for document in retrieved_docs
     ]
 
-    scores = reranker.predict(pairs)
+    scores = get_reranker().predict(pairs)
 
     for document, score in zip(retrieved_docs, scores):
         document["rerank_score"] = float(score)
