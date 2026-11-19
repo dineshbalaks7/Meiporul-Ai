@@ -28,7 +28,7 @@ llm_utility = ChatGroq(
 llm_answer = ChatGroq(
     model=MODEL_NAME,
     temperature=0,
-    max_tokens=1500,
+    max_tokens=2500,
     api_key=os.getenv("GROQ_API_KEY"),
     seed=42,
     reasoning_effort="low",
@@ -399,22 +399,20 @@ def generate_answer(query, retrieved_docs, strict_mode: bool = False, document_n
 
         format_rule = """
 FORMAT:
-- Use a maximum of 6 concise bullet points.
-- One bullet per main requirement.
-- Combine closely related details.
-- Preserve important deadlines, numbers and exceptions.
-- Do not use nested bullets or lengthy explanations.
-- Cite every factual bullet.
+- Provide all applicable points, rules, or requirements completely without omitting any.
+- Use clear bullet points.
+- Do not truncate or arbitrarily combine separate rules.
+- Preserve all important items, conditions, numbers, and exceptions.
+- Cite every factual bullet with its source number (e.g. [1], [2]).
 """
 
     else:
 
         format_rule = """
 FORMAT:
-- Answer directly in a concise paragraph or short list.
-- Explain only what the question asks.
-- Avoid repetition and unrelated information.
-- Cite every factual statement.
+- Answer completely and directly using bullet points or paragraphs as best fits the question.
+- Do not truncate or omit relevant details found in the context.
+- Cite every factual statement with its source number (e.g. [1], [2]).
 """
 
     # --------------------------------------------------

@@ -32,15 +32,15 @@ MULTI_QUERY_CHUNKS_PER_QUERY = 2
 MAX_RANK_PER_QUERY = 5
 
 # Single-query context selection
-SINGLE_QUERY_MAX_CHUNKS = 5
+SINGLE_QUERY_MAX_CHUNKS = 7
 
 # Context limits
-MAX_CONTEXT_CHUNKS = 7
-MAX_CONTEXT_CHARS = 10000
+MAX_CONTEXT_CHUNKS = 8
+MAX_CONTEXT_CHARS = 12000
 
 # Retrieval limits
-SINGLE_QUERY_TOP_K = 8
-MULTI_QUERY_TOP_K = 6
+SINGLE_QUERY_TOP_K = 10
+MULTI_QUERY_TOP_K = 7
 
 
 # ==================================================
