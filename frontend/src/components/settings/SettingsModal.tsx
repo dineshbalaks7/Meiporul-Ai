@@ -381,7 +381,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <div className="py-1.5 flex items-center justify-between">
                   <span className="text-[#78716C]">LLM</span>
-                  <span className="text-[#1C1917]">Groq LLM</span>
+                  <span className="text-[#1C1917]">GPT-OSS 120B (Groq)</span>
                 </div>
               </div>
             </div>

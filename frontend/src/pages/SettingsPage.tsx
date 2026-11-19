@@ -205,7 +205,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
           <div className="py-2 flex items-center justify-between">
             <span className="text-[#78716C]">LLM</span>
-            <span className="text-[#1C1917]">Groq LLM (Contextual Question Rewriting)</span>
+            <span className="text-[#1C1917]">GPT-OSS 120B (Groq LPUs)</span>
           </div>
         </div>
       </div>
