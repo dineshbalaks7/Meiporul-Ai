@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUp, Plus, SlidersHorizontal, Check, FileUp } from 'lucide-react';
+import { ArrowUp, Plus, FileText, Check, FileUp } from 'lucide-react';
 import { DocumentItem } from '../../types/document';
 import { Dropdown } from '../ui/Dropdown';
 import { cn } from '../../lib/utils';
@@ -262,7 +262,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               </motion.button>
             )}
 
-            {/* Tools / Document scope pill button */}
+            {/* Documents scope pill button */}
             <Dropdown
               align="left"
               direction="up"
@@ -280,9 +280,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   )}
                   title={selectedDoc ? `Strict RAG: Scoped to ${selectedDoc.filename}` : "Select document scope"}
                 >
-                  <SlidersHorizontal className={cn("w-3 h-3 shrink-0", selectedDoc ? "text-[#9E4A25]" : "text-[#78716C]")} />
+                  <FileText className={cn("w-3 h-3 shrink-0", selectedDoc ? "text-[#9E4A25]" : "text-[#78716C]")} />
                   <span className="truncate max-w-[110px] sm:max-w-[200px]">
-                    {selectedDoc ? selectedDoc.filename : 'Tools'}
+                    {selectedDoc ? selectedDoc.filename : 'Documents'}
                   </span>
                 </motion.button>
               }
