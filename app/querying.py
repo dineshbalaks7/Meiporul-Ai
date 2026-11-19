@@ -13,6 +13,12 @@ from app.loaders.generation import (
 )
 from app.services.citation_service import normalize_citations
 from app.services.document_manager import get_document_info
+from app.services.guardrail_service import (
+    check_prompt_injection,
+    sanitize_pii,
+    check_general_scope,
+    apply_output_guardrails,
+)
 
 
 # ==================================================
@@ -278,6 +284,34 @@ def answer_question(query, document_id=None, chat_history=None):
     query = query.strip()
     chat_history = chat_history or []
 
+    # --------------------------------------------------
+    # INPUT GUARDRAIL 1: PROMPT INJECTION / JAILBREAK
+    # --------------------------------------------------
+    injection_check = check_prompt_injection(query)
+    if injection_check.get("violated"):
+        print("\n[GUARDRAIL TRIGGERED]: Prompt Injection Detected")
+        return {
+            "answer": injection_check["message"],
+            "sources": [],
+        }
+
+    # --------------------------------------------------
+    # INPUT GUARDRAIL 2: SANITIZE PII & SECRETS
+    # --------------------------------------------------
+    query = sanitize_pii(query)
+
+    # --------------------------------------------------
+    # INPUT GUARDRAIL 3: MINIMAL GENERAL SCOPE ENFORCEMENT
+    # Declines coding, email composition, creative writing, generic recipes
+    # --------------------------------------------------
+    scope_check = check_general_scope(query)
+    if scope_check.get("violated"):
+        print("\n[GUARDRAIL TRIGGERED]: Out-of-Scope Task Refused")
+        return {
+            "answer": scope_check["message"],
+            "sources": [],
+        }
+
     # Clean and validate document_id
     if document_id:
         document_id = str(document_id).strip()
@@ -335,10 +369,7 @@ def answer_question(query, document_id=None, chat_history=None):
                 chat_history
             )
 
-            return {
-                "answer": answer,
-                "sources": [],
-            }
+            return apply_output_guardrails(answer, sources=[])
 
     # --------------------------------------------------
     # 1. QUESTION REWRITING
@@ -636,4 +667,8 @@ def answer_question(query, document_id=None, chat_history=None):
         len(result.get("sources", [])),
     )
 
-    return result
+    # OUTPUT GUARDRAIL: Sanitize PII, clean format, and verify citation consistency
+    return apply_output_guardrails(
+        result.get("answer", ""),
+        result.get("sources", [])
+    )
