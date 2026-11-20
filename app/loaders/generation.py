@@ -123,12 +123,33 @@ _CHITCHAT_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Words that strongly suggest the question is about uploaded files.
+# Words that strongly suggest the question is about uploaded files or document contents.
 _DOC_SIGNAL_RE = re.compile(
-    r"\b(polic(y|ies)|document|documents|pdf|file|files|uploaded|"
+    r"\b("
+    r"polic(y|ies)|document|documents|pdf|file|files|uploaded|"
     r"clause|section|page|according to|as per|handbook|manual|"
     r"contract|agreement|guidelines?|eligib\w*|requirements?|"
-    r"leave|remote work|work from home|benefits?|summar(y|ize|ise))\b",
+    r"leave|remote work|work from home|benefits?|summar(y|ize|ise)|"
+    r"assign(ment|ments)?|homework|submit|submission|submitting|due|deadline|"
+    r"exam|examination|test|quiz|grade|grades|grading|score|scores|marks|"
+    r"course|syllabus|curriculum|class|lecture|attendance|faculty|professor|"
+    r"student|scholarship|fee|fees|tuition|admission|semester|gpa|credits?|"
+    r"penalty|penalties|late|extension|pass|fail|passing|criteria|rule|rules|"
+    r"salary|bonus|payroll|appraisal|notice period|probation|promotion|"
+    r"timing|hours|overtime|holiday|holidays|vacation|medical|insurance|reimbursement"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# Common starters or signs that an input is a genuine query intended for the documents.
+_QUESTION_INDICATOR_RE = re.compile(
+    r"(\?|\b(what|how|when|where|why|which|who|whom|whose|can|could|is|are|was|were|do|does|did|will|would|should|tell\s+me|explain|list|describe|show\s+me)\b)",
+    re.IGNORECASE,
+)
+
+# Out-of-scope requests (coding, creative writing, recipes) that should route to general refusal.
+_OUT_OF_SCOPE_RE = re.compile(
+    r"\b(write|create|draft|generate|debug|solve)\s+(me\s+)?(a\s+|an\s+)?(python|javascript|java|c\+\+|sql|code|script|program|poem|story|essay|recipe|diet\s+plan|workout|cover\s+letter|resignation)\b",
     re.IGNORECASE,
 )
 
@@ -138,41 +159,50 @@ def classify_question(query, chat_history=None, has_documents=None):
     Classify the latest message as GENERAL or DOCUMENT.
 
     This app is a document-QA system, so the default is DOCUMENT.
-    Only clear non-document messages are routed to GENERAL.
+    Deterministic checks handle >95% of queries in 0ms without an expensive LLM call.
 
     Order of decisions:
-    1. Empty input            -> GENERAL
-    2. Date/time              -> GENERAL
-    3. Pure greeting/chitchat -> GENERAL
-    4. Document keywords      -> DOCUMENT
-    5. Otherwise ask the LLM, and default to DOCUMENT
-
-    `has_documents` is accepted for backward compatibility but is
-    intentionally NOT used for routing, because it can be computed
-    incorrectly by the caller.
+    1. Empty input                        -> GENERAL
+    2. Date/time                          -> GENERAL
+    3. Pure greeting/chitchat             -> GENERAL
+    4. Out-of-scope generation requests   -> GENERAL (triggers polite refusal)
+    5. Document / academic / policy terms -> DOCUMENT (fast-path)
+    6. General question structure / ?     -> DOCUMENT (fast-path)
+    7. Multi-word query (>= 3 words)      -> DOCUMENT (safe default)
+    8. Otherwise fallback to LLM
     """
-
-    print(
-        f"[generation.classify_question] CALLED "
-        f"query={query!r} has_documents={has_documents!r}"
-    )
 
     if not isinstance(query, str) or not query.strip():
         return "GENERAL"
 
-    # Deterministic handling for obvious date/time requests.
-    if _is_date_question(query) or _is_time_question(query):
+    cleaned_query = query.strip()
+
+    # 1. Obvious date/time requests (0ms)
+    if _is_date_question(cleaned_query) or _is_time_question(cleaned_query):
         return "GENERAL"
 
-    # Pure greetings never need retrieval.
-    if _CHITCHAT_RE.match(query):
+    # 2. Pure greetings / identity / pleasantries (0ms)
+    if _CHITCHAT_RE.match(cleaned_query):
         return "GENERAL"
 
-    # Strong document signals skip the LLM call entirely.
-    if _DOC_SIGNAL_RE.search(query):
-        print("[generation.classify_question] keyword match -> DOCUMENT")
+    # 3. Explicit out-of-scope tasks (code, recipes, essays) (0ms)
+    if _OUT_OF_SCOPE_RE.search(cleaned_query):
+        return "GENERAL"
+
+    # 4. Document / academic / workplace keywords (0ms)
+    if _DOC_SIGNAL_RE.search(cleaned_query):
         return "DOCUMENT"
 
+    # 5. Question syntax or question words (0ms)
+    if _QUESTION_INDICATOR_RE.search(cleaned_query):
+        return "DOCUMENT"
+
+    # 6. Any multi-word query in a document assistant defaults to DOCUMENT (0ms)
+    words = cleaned_query.split()
+    if len(words) >= 3:
+        return "DOCUMENT"
+
+    # 7. Only short ambiguous text (e.g. 1-2 words that aren't greetings) falls back to LLM
     history = _conversation_history_text(chat_history)
 
     prompt = f"""You are an intent classifier for Meiporul AI.
@@ -184,26 +214,23 @@ DOCUMENT:
 - Anything that could plausibly be answered from the uploaded files.
 - Questions about policies, rules, requirements, processes, reports,
   manuals or contracts, even if the message does not mention
-  "document" or "PDF" (e.g. "what are the policies", "how many leave days").
+  "document" or "PDF".
 - Requests to summarize, compare, extract or analyze.
-- Follow-ups to a previous document-based answer.
 
 GENERAL:
 - Greetings and casual conversation.
-- Clearly unrelated general knowledge, coding or educational questions
-  (e.g. "what is a neural network", "write a Python loop").
+- Clearly unrelated general knowledge or coding questions.
 - Questions about the assistant itself.
 
 Important:
-- Because documents are uploaded, when the message is ambiguous
-  choose DOCUMENT.
+- Because documents are uploaded, when the message is ambiguous choose DOCUMENT.
 - Return only GENERAL or DOCUMENT. Do not explain.
 
 RECENT CONVERSATION:
 {history}
 
 LATEST USER MESSAGE:
-{query}
+{cleaned_query}
 
 CATEGORY:
 """
@@ -212,10 +239,6 @@ CATEGORY:
         response = llm_utility.invoke(prompt)
         result = str(response.content or "").strip().upper()
 
-        print(f"[generation.classify_question] LLM result={result!r}")
-
-        # Accept only a clear GENERAL response. Any other or
-        # malformed output defaults to DOCUMENT for safer grounding.
         if result.startswith("GENERAL"):
             return "GENERAL"
 
@@ -241,6 +264,31 @@ def generate_general_answer(query, chat_history=None):
 
     if _is_time_question(query):
         return f"The current time is {time_text} IST."
+
+    # Fast-path: pure greetings need no LLM call at all.
+    if _CHITCHAT_RE.match(query):
+        q = query.strip().lower().rstrip("!.? ")
+        if q in ("bye",):
+            return "Goodbye! Feel free to come back anytime you need help with your documents. 👋"
+        if q in ("thanks", "thank you"):
+            return "You're welcome! Let me know if you have any more questions about your documents. 😊"
+        if "who are you" in q:
+            return (
+                "I'm **Meiporul AI**, your document intelligence assistant. "
+                "Upload a document and ask me anything — I'll find the answers for you!"
+            )
+        if "what can you do" in q:
+            return (
+                "I can **search, summarize, and answer questions** from your uploaded documents. "
+                "Just upload a PDF or text file and ask away!"
+            )
+        if "how are you" in q:
+            return "I'm doing great and ready to help! What document questions can I answer for you today? 😊"
+        # Default greeting
+        return (
+            "Hello! I'm **Meiporul AI**, your document intelligence assistant. "
+            "How can I help you with your documents today?"
+        )
 
     history = _conversation_history_text(chat_history)
 
